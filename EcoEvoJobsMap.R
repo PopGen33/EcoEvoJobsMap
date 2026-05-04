@@ -16,8 +16,13 @@ for(i in 1:length(libNames)){
 ##########
 
 # set working directory
-# Most importantly, output is sent to the working directory. Geodata also put GADM files for the maps there, too. 
+# Most importantly, output is sent to the working directory. Geodata also put GADM files for the maps there, too, by default. 
 setwd(r"(C:\Users\Conrad\Desktop\JobSearch\EcoEvoJobsMap)")
+
+# Set GADM path
+# This is where the geodata package will put the files that store the state / country polygones (can be a few megabytes each)
+# By default: current working directory (".")
+gadm_path <- "."
 
 # EvoEco Jobs Google Sheets URL (current May 2026)
 # Need both the 
@@ -105,9 +110,9 @@ PostDocsData <- PostDocsData %>% arrange(desc(Timestamp))
 PermFaculty_states <- intersect(unique(PermFacultyData %>% pull(Location)), state.name)
 PermFaculty_countries <- setdiff(unique(PermFacultyData %>% pull(Location)), state.name)
 
-PermFaculty_states_gadm <- geodata::gadm("USA", resolution = 2, path = ".") %>%
+PermFaculty_states_gadm <- geodata::gadm("USA", resolution = 2, path = gadm_path) %>%
     filter(NAME_1 %in% PermFaculty_states)
-PermFaculty_countries_gadm <- geodata::gadm(PermFaculty_countries, level = 0, resolution = 2, path = ".")
+PermFaculty_countries_gadm <- geodata::gadm(PermFaculty_countries, level = 0, resolution = 2, path = gadm_path)
 PermFaculty_AllAreas <- rbind(PermFaculty_countries_gadm, PermFaculty_states_gadm) %>%
     mutate(Location = if_else(COUNTRY == "United States", NAME_1, COUNTRY))
 
@@ -162,9 +167,9 @@ htmlwidgets::saveWidget(PermFaculty_leaflet_render,
 PostDocs_states <- intersect(unique(PostDocsData %>% pull(Location)), state.name)
 PostDocs_countries <- setdiff(unique(PostDocsData %>% pull(Location)), state.name)
 
-PostDocs_states_gadm <- geodata::gadm("USA", resolution = 2, path = ".") %>%
+PostDocs_states_gadm <- geodata::gadm("USA", resolution = 2, path = gadm_path) %>%
     filter(NAME_1 %in% PostDocs_states)
-PostDocs_countries_gadm <- geodata::gadm(PostDocs_countries, level = 0, resolution = 2, path = ".")
+PostDocs_countries_gadm <- geodata::gadm(PostDocs_countries, level = 0, resolution = 2, path = gadm_path)
 PostDocs_AllAreas <- rbind(PostDocs_countries_gadm, PostDocs_states_gadm) %>%
     mutate(Location = if_else(COUNTRY == "United States", NAME_1, COUNTRY))
 
