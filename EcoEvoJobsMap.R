@@ -35,10 +35,10 @@ gSheet_IDs <- c(PermFaculty = 1219796980,
                 PostDocs = 1228591705)
 
 # Cutoff for review date when filtering (greater than or equal to this date)
-review_cutoff <- lubridate::today() + lubridate::days(5)
+review_cutoff <- lubridate::today() + lubridate::days(3)
 
 # Cutoff for old posts (greater than or equal to this date)
-stale_cutoff <- lubridate::today() - months(6)
+stale_cutoff <- lubridate::today() - months(4)
 
 ###########
 ## /Vars ##
@@ -110,6 +110,8 @@ PostDocsData <- PostDocsData %>% arrange(desc(Timestamp))
 PermFaculty_states <- intersect(unique(PermFacultyData %>% pull(Location)), state.name)
 PermFaculty_countries <- setdiff(unique(PermFacultyData %>% pull(Location)), state.name)
 
+PermFaculty_countries <- PermFaculty_countries[PermFaculty_countries != "Other"]
+
 PermFaculty_states_gadm <- geodata::gadm("USA", resolution = 2, path = gadm_path) %>%
     filter(NAME_1 %in% PermFaculty_states)
 PermFaculty_countries_gadm <- geodata::gadm(PermFaculty_countries, level = 0, resolution = 2, path = gadm_path)
@@ -123,6 +125,7 @@ for(loc in unique(PermFaculty_AllAreas %>% pull(Location))){
     ft <- flextable(PermFacultyData %>% 
                         filter(Location == loc) %>% 
                         select(Timestamp, Institution, Subject_Area, Review_Date, Position_Type, URL, Notes)) %>%
+        compose(j = "URL", value = as_paragraph(hyperlink_text(x = URL, url = URL))) %>%
         theme_zebra() %>%
         valign(valign = "top", part = "body") %>%
         set_table_properties(layout = "fixed",
@@ -133,7 +136,8 @@ for(loc in unique(PermFaculty_AllAreas %>% pull(Location))){
                              )) %>%
         htmltools_value() %>%
         as.character() %>% 
-        stringr::str_replace("<style></style>\n", "")
+        stringr::str_replace("<style></style>\n", "") %>%
+        stringr::str_replace_all("<a ", "<a target=\"_blank\" ")
     PermFaculty_leaflet_render <- PermFaculty_leaflet_render %>% 
         addPolygons(data = PermFaculty_AllAreas %>% 
                         filter(Location == loc),
@@ -167,6 +171,8 @@ htmlwidgets::saveWidget(PermFaculty_leaflet_render,
 PostDocs_states <- intersect(unique(PostDocsData %>% pull(Location)), state.name)
 PostDocs_countries <- setdiff(unique(PostDocsData %>% pull(Location)), state.name)
 
+PostDocs_countries <- PostDocs_countries[PostDocs_countries != "Other"]
+
 PostDocs_states_gadm <- geodata::gadm("USA", resolution = 2, path = gadm_path) %>%
     filter(NAME_1 %in% PostDocs_states)
 PostDocs_countries_gadm <- geodata::gadm(PostDocs_countries, level = 0, resolution = 2, path = gadm_path)
@@ -180,6 +186,7 @@ for(loc in unique(PostDocs_AllAreas %>% pull(Location))){
     ft <- flextable(PostDocsData %>% 
                         filter(Location == loc) %>% 
                         select(Timestamp, Last_Update, Institution, Subject_Area, Review_Date, PI, URL, Notes)) %>%
+        compose(j = "URL", value = as_paragraph(hyperlink_text(x = URL, url = URL))) %>%
         theme_zebra() %>%
         valign(valign = "top", part = "body") %>%
         set_table_properties(layout = "fixed",
@@ -190,7 +197,8 @@ for(loc in unique(PostDocs_AllAreas %>% pull(Location))){
                              )) %>%
         htmltools_value() %>%
         as.character() %>% 
-        stringr::str_replace("<style></style>\n", "")
+        stringr::str_replace("<style></style>\n", "") %>%
+        stringr::str_replace_all("<a ", "<a target=\"_blank\" ")
     PostDocs_leaflet_render <- PostDocs_leaflet_render %>% 
         addPolygons(data = PostDocs_AllAreas %>% 
                         filter(Location == loc),
