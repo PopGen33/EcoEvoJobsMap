@@ -35,10 +35,10 @@ gSheet_IDs <- c(PermFaculty = 1219796980,
                 PostDocs = 1228591705)
 
 # Cutoff for review date when filtering (greater than or equal to this date)
-review_cutoff <- lubridate::today() + lubridate::days(3)
+review_cutoff <- lubridate::today() + lubridate::days(2)
 
 # Cutoff for old posts (greater than or equal to this date)
-stale_cutoff <- lubridate::today() - months(4)
+stale_cutoff <- lubridate::today() - months(3)
 
 ###########
 ## /Vars ##
@@ -111,6 +111,7 @@ PermFaculty_states <- intersect(unique(PermFacultyData %>% pull(Location)), stat
 PermFaculty_countries <- setdiff(unique(PermFacultyData %>% pull(Location)), state.name)
 
 PermFaculty_countries <- PermFaculty_countries[PermFaculty_countries != "Other"]
+PermFaculty_countries <- PermFaculty_countries[PermFaculty_countries != "Europe (Other)"]
 
 PermFaculty_states_gadm <- geodata::gadm("USA", resolution = 2, path = gadm_path) %>%
     filter(NAME_1 %in% PermFaculty_states)
@@ -172,6 +173,7 @@ PostDocs_states <- intersect(unique(PostDocsData %>% pull(Location)), state.name
 PostDocs_countries <- setdiff(unique(PostDocsData %>% pull(Location)), state.name)
 
 PostDocs_countries <- PostDocs_countries[PostDocs_countries != "Other"]
+PostDocs_countries <- PostDocs_countries[PostDocs_countries != "Europe (Other)"]
 
 PostDocs_states_gadm <- geodata::gadm("USA", resolution = 2, path = gadm_path) %>%
     filter(NAME_1 %in% PostDocs_states)
