@@ -35,10 +35,10 @@ gSheet_IDs <- c(PermFaculty = 1219796980,
                 PostDocs = 1228591705)
 
 # Cutoff for review date when filtering (greater than or equal to this date)
-review_cutoff <- lubridate::today() + lubridate::days(2)
+review_cutoff <- lubridate::today() + lubridate::days(1)
 
 # Cutoff for old posts (greater than or equal to this date)
-stale_cutoff <- lubridate::today() - months(3)
+stale_cutoff <- lubridate::today() - lubridate::days(60)
 
 ###########
 ## /Vars ##
@@ -142,7 +142,7 @@ for(loc in unique(PermFaculty_AllAreas %>% pull(Location))){
     PermFaculty_leaflet_render <- PermFaculty_leaflet_render %>% 
         addPolygons(data = PermFaculty_AllAreas %>% 
                         filter(Location == loc),
-                    popup = paste0("<h2>", loc, " (<a href=\"http://ecoevojobs.net\" target= \"_blank\">EcoEvoJobs.net</a> for complete Notes)</h2>", ft),
+                    popup = paste0("<h3>", loc, " (<a href=\"http://ecoevojobs.net\" target= \"_blank\">EcoEvoJobs.net</a> for complete Notes); Map last updated: ", date(today()),"</h3>", ft),
                     options = list(
                         popupOptions = list(
                             minWidth = 400, 
@@ -164,7 +164,7 @@ for(loc in unique(PermFaculty_AllAreas %>% pull(Location))){
 }
 
 htmlwidgets::saveWidget(PermFaculty_leaflet_render, 
-                        paste0("PermFaculty_", date(today()), ".html"), 
+                        paste0("PermFaculty.html"), 
                         selfcontained = TRUE,
                         title = "PermFacultyJobs - EcoEvoJobs")
 
@@ -204,7 +204,7 @@ for(loc in unique(PostDocs_AllAreas %>% pull(Location))){
     PostDocs_leaflet_render <- PostDocs_leaflet_render %>% 
         addPolygons(data = PostDocs_AllAreas %>% 
                         filter(Location == loc),
-                    popup = paste0("<h2>", loc, " (<a href=\"http://ecoevojobs.net\" target= \"_blank\">EcoEvoJobs.net</a> for complete Notes)</h2>", ft),
+                    popup = paste0("<h3>", loc, " (<a href=\"http://ecoevojobs.net\" target= \"_blank\">EcoEvoJobs.net</a> for complete Notes); Map last updated: ", date(today()),"</h3>", ft),
                     options = list(
                         popupOptions = list(
                             minWidth = 400, 
@@ -226,6 +226,6 @@ for(loc in unique(PostDocs_AllAreas %>% pull(Location))){
 }
 
 htmlwidgets::saveWidget(PostDocs_leaflet_render, 
-                        paste0("PostDocsJobs_", date(today()), ".html"), 
+                        paste0("PostDocsJobs.html"), 
                         selfcontained = TRUE,
                         title = "PostDocsJobs - EcoEvoJobs")
