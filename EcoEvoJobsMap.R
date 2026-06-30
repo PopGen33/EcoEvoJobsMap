@@ -35,7 +35,7 @@ gSheet_IDs <- c(PermFaculty = 1219796980,
                 PostDocs = 1228591705)
 
 # Cutoff for review date when filtering (greater than or equal to this date)
-review_cutoff <- lubridate::today() + lubridate::days(1)
+review_cutoff <- lubridate::today() + lubridate::days(0)
 
 # Cutoff for old posts (greater than or equal to this date)
 stale_cutoff <- lubridate::today() - lubridate::days(60)
@@ -102,30 +102,55 @@ PostDocsData <- PostDocsData %>%
 PermFacultyData <- PermFacultyData %>% arrange(desc(Timestamp))
 PostDocsData <- PostDocsData %>% arrange(desc(Timestamp))
 
+# Create the "Land of Other" for the people who don't put a US state or country in the location field
+land_of_other <- vect(
+    matrix(c(-42,26,
+             -42,30,
+             -38,30,
+             -38,26,
+             -42,26),
+           ncol = 2,
+           byrow = TRUE),
+    type = "polygons",
+    atts = data.frame(Location_Associable = "Other"),
+    crs = crs(geodata::gadm("USA", resolution = 2, path = gadm_path))
+)
+
 ##############
 ## Mapping ###
 ##############
 
 # PermFaculty Mapping
 PermFaculty_states <- intersect(unique(PermFacultyData %>% pull(Location)), state.name)
-PermFaculty_countries <- setdiff(unique(PermFacultyData %>% pull(Location)), state.name)
+PermFaculty_countries <- intersect(unique(PermFacultyData %>% pull(Location)), country_codes() %>% pull(NAME))
+PermFaculty_other <- setdiff(unique(PermFacultyData %>% pull(Location)), c(PermFaculty_states, PermFaculty_countries))
 
-PermFaculty_countries <- PermFaculty_countries[PermFaculty_countries != "Other"]
-PermFaculty_countries <- PermFaculty_countries[PermFaculty_countries != "Europe (Other)"]
+# Catch things that aren't states or countries in the location field; call them "Other"
+# This column is purely for associating data with map locations
+PermFacultyData <- PermFacultyData %>% 
+    mutate(Location_Associable = if_else(Location %in% PermFaculty_other, "Other", Location))
 
+# Create the map areas and add the Location_Associable field to bind these to the data
 PermFaculty_states_gadm <- geodata::gadm("USA", resolution = 2, path = gadm_path) %>%
     filter(NAME_1 %in% PermFaculty_states)
 PermFaculty_countries_gadm <- geodata::gadm(PermFaculty_countries, level = 0, resolution = 2, path = gadm_path)
 PermFaculty_AllAreas <- rbind(PermFaculty_countries_gadm, PermFaculty_states_gadm) %>%
-    mutate(Location = if_else(COUNTRY == "United States", NAME_1, COUNTRY))
+    mutate(Location_Associable = if_else(COUNTRY == "United States", NAME_1, COUNTRY))
+PermFaculty_AllAreas <- rbind(PermFaculty_AllAreas, land_of_other)
 
+# Render
 PermFaculty_leaflet_render <- leaflet() %>%
     addTiles(urlTemplate = "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png")
 
-for(loc in unique(PermFaculty_AllAreas %>% pull(Location))){
+for(loc in unique(PermFacultyData %>% pull(Location_Associable))){
+    if(loc == "Other"){
+        select_these <- c("Timestamp", "Location", "Institution", "Subject_Area", "Review_Date", "Position_Type", "URL", "Notes")
+    }else{
+        select_these <- c("Timestamp", "Institution", "Subject_Area", "Review_Date", "Position_Type", "URL", "Notes")
+    }
     ft <- flextable(PermFacultyData %>% 
-                        filter(Location == loc) %>% 
-                        select(Timestamp, Institution, Subject_Area, Review_Date, Position_Type, URL, Notes)) %>%
+                        filter(Location_Associable == loc) %>% 
+                        select(all_of(select_these))) %>%
         compose(j = "URL", value = as_paragraph(hyperlink_text(x = URL, url = URL))) %>%
         theme_zebra() %>%
         valign(valign = "top", part = "body") %>%
@@ -141,7 +166,7 @@ for(loc in unique(PermFaculty_AllAreas %>% pull(Location))){
         stringr::str_replace_all("<a ", "<a target=\"_blank\" ")
     PermFaculty_leaflet_render <- PermFaculty_leaflet_render %>% 
         addPolygons(data = PermFaculty_AllAreas %>% 
-                        filter(Location == loc),
+                        filter(Location_Associable == loc),
                     popup = paste0("<h3>", loc, " (<a href=\"http://ecoevojobs.net\" target= \"_blank\">EcoEvoJobs.net</a> for complete Notes); Map last updated: ", date(today()),"</h3>", ft),
                     options = list(
                         popupOptions = list(
@@ -170,24 +195,35 @@ htmlwidgets::saveWidget(PermFaculty_leaflet_render,
 
 # PostDocs Mapping
 PostDocs_states <- intersect(unique(PostDocsData %>% pull(Location)), state.name)
-PostDocs_countries <- setdiff(unique(PostDocsData %>% pull(Location)), state.name)
+PostDocs_countries <- intersect(unique(PostDocsData %>% pull(Location)), country_codes() %>% pull(NAME))
+PostDocs_other <- setdiff(unique(PostDocsData %>% pull(Location)), c(PostDocs_states, PostDocs_countries))
 
-PostDocs_countries <- PostDocs_countries[PostDocs_countries != "Other"]
-PostDocs_countries <- PostDocs_countries[PostDocs_countries != "Europe (Other)"]
+# Catch things that aren't states or countries in the location field; call them "Other"
+# This column is purely for associating data with map locations
+PostDocsData <- PostDocsData %>% 
+    mutate(Location_Associable = if_else(Location %in% PostDocs_other, "Other", Location))
 
+# Create the map areas and add the Location_Associable field to bind these to the data
 PostDocs_states_gadm <- geodata::gadm("USA", resolution = 2, path = gadm_path) %>%
     filter(NAME_1 %in% PostDocs_states)
 PostDocs_countries_gadm <- geodata::gadm(PostDocs_countries, level = 0, resolution = 2, path = gadm_path)
 PostDocs_AllAreas <- rbind(PostDocs_countries_gadm, PostDocs_states_gadm) %>%
-    mutate(Location = if_else(COUNTRY == "United States", NAME_1, COUNTRY))
+    mutate(Location_Associable = if_else(COUNTRY == "United States", NAME_1, COUNTRY))
+PostDocs_AllAreas <- rbind(PostDocs_AllAreas, land_of_other)
 
+# Render
 PostDocs_leaflet_render <- leaflet() %>%
     addTiles(urlTemplate = "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png")
 
-for(loc in unique(PostDocs_AllAreas %>% pull(Location))){
+for(loc in unique(PostDocsData %>% pull(Location_Associable))){
+    if(loc %in% PostDocs_other){
+        select_these <- c("Timestamp", "Last_Update", "Location", "Institution", "Subject_Area", "Review_Date", "PI", "URL", "Notes")
+    }else{
+        select_these <- c("Timestamp", "Last_Update", "Institution", "Subject_Area", "Review_Date", "PI", "URL", "Notes")
+    }
     ft <- flextable(PostDocsData %>% 
-                        filter(Location == loc) %>% 
-                        select(Timestamp, Last_Update, Institution, Subject_Area, Review_Date, PI, URL, Notes)) %>%
+                        filter(Location_Associable == loc) %>% 
+                        select(all_of(select_these))) %>%
         compose(j = "URL", value = as_paragraph(hyperlink_text(x = URL, url = URL))) %>%
         theme_zebra() %>%
         valign(valign = "top", part = "body") %>%
@@ -203,7 +239,7 @@ for(loc in unique(PostDocs_AllAreas %>% pull(Location))){
         stringr::str_replace_all("<a ", "<a target=\"_blank\" ")
     PostDocs_leaflet_render <- PostDocs_leaflet_render %>% 
         addPolygons(data = PostDocs_AllAreas %>% 
-                        filter(Location == loc),
+                        filter(Location_Associable == loc),
                     popup = paste0("<h3>", loc, " (<a href=\"http://ecoevojobs.net\" target= \"_blank\">EcoEvoJobs.net</a> for complete Notes); Map last updated: ", date(today()),"</h3>", ft),
                     options = list(
                         popupOptions = list(
