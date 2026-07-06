@@ -216,7 +216,7 @@ PostDocs_leaflet_render <- leaflet() %>%
     addTiles(urlTemplate = "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png")
 
 for(loc in unique(PostDocsData %>% pull(Location_Associable))){
-    if(loc %in% PostDocs_other){
+    if(loc == "Other"){
         select_these <- c("Timestamp", "Last_Update", "Location", "Institution", "Subject_Area", "Review_Date", "PI", "URL", "Notes")
     }else{
         select_these <- c("Timestamp", "Last_Update", "Institution", "Subject_Area", "Review_Date", "PI", "URL", "Notes")
