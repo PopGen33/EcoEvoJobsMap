@@ -17,7 +17,7 @@ for(i in 1:length(libNames)){
 
 # set working directory
 # Most importantly, output is sent to the working directory. Geodata also put GADM files for the maps there, too, by default. 
-setwd(r"(C:\Users\Conrad\Desktop\JobSearch\EcoEvoJobsMap)")
+#setwd(r"(C:\Users\Conrad\Desktop\JobSearch\EcoEvoJobsMap)")
 
 # Set GADM path
 # This is where the geodata package will put the files that store the state / country polygones (can be a few megabytes each)
@@ -26,13 +26,13 @@ gadm_path <- "."
 
 # EvoEco Jobs Google Sheets URL (current May 2026)
 # Need both the 
-EvoEcoURL <- r"(https://docs.google.com/spreadsheets/d/1P7BfU0emdcGFVIWIs_erFxyy0UGXXORw7h0rpU19gQ8/edit?gid=1228591705)"
+EvoEcoURL <- r"(https://docs.google.com/spreadsheets/d/1frP2LlZy_GibdpXxg_WDoHGjVAZk_8tb-GsPN_Thkms/edit?gid=332523242)"
 
 # IDs for each sheet (may need to be updated)
 # This is the string of numbers after "gid=" in the URL
 # I hard-coded handling for the Permanent Faculty and PostDoc sheet; would need to rework this if more sheets got added
-gSheet_IDs <- c(PermFaculty = 1219796980,
-                PostDocs = 1228591705)
+gSheet_IDs <- c(PermFaculty = 332523242,
+                PostDocs = 900481761)
 
 # Cutoff for review date when filtering (greater than or equal to this date)
 review_cutoff <- lubridate::today() + lubridate::days(0)
@@ -59,15 +59,19 @@ PostDocsData <- httr::content(httr::GET(gSheet_DownloadURLs["PostDocs"]), as = "
 colnames(PermFacultyData) <- stringr::str_replace_all(colnames(PermFacultyData), " ", "_")
 colnames(PostDocsData) <- stringr::str_replace_all(colnames(PostDocsData), " ", "_")
 
-# For some reason, the Faculty Data has duplicate columns, so drop them and fix names (may no longer be needed in the future)
+# For some reason, the Data has duplicate columns, so drop them and fix names (may no longer be needed in the future)
 PermFacultyData <- PermFacultyData %>% 
-    select(-Notes...13, -Number_Applied...14) %>%
+    select(-Notes...14, -Number_Applied...15) %>%
     rename(Notes = Notes...10,
-           Number_Applied = Number_Applied...11)
+           Number_Applied = Number_Applied...12)
+
+PostDocsData <- PostDocsData %>% 
+    select(-Notes...11) %>%
+    rename(Notes = Notes...9)
 
 # Drop 'Mod_Flag' and 'Number_Applied' columns (I don't see these as useful)
 PermFacultyData <- PermFacultyData %>% select(-Mod_Flag, -Number_Applied)
-PostDocsData <- PostDocsData %>% select(-Mod_Flag, -Notes_Backup)
+PostDocsData <- PostDocsData %>% select(-Mod_Flag)
 
 # Correctly format columns as datetime
 PermFacultyData <- PermFacultyData %>% 
